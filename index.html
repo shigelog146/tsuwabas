@@ -236,7 +236,7 @@ data.forEach(stop=>{
 
 const d=distance(myLat,myLng,stop.lat,stop.lng);
 
-if(d>500)return;
+if(d>50000)return;
 
 if(!nearest[stop.route_name] || d<nearest[stop.route_name].d){
 
@@ -254,9 +254,13 @@ d:d
 // バス停表示
 //===============================
 
+const bounds=L.latLngBounds();
+
 Object.values(nearest).forEach(n=>{
 
 const s=n.stop;
+
+bounds.extend([s.lat,s.lng]);
 
 const next=nextBus(s.timetable);
 
@@ -297,6 +301,8 @@ onclick="startNavigation(${s.lat},${s.lng})">
 );
 
 });
+
+map.fitBounds(bounds,{padding:[50,50]});
 
 
 //===============================
