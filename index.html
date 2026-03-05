@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+
+<meta charset="UTF-8">
+<title>観光バスナビ</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:"Yu Gothic";
+}
+
+#map{
+height:100vh;
+}
+
+.panel{
+position:absolute;
+top:10px;
+left:10px;
+background:white;
+padding:10px;
+border-radius:10px;
+z-index:1000;
+box-shadow:0 3px 10px rgba(0,0,0,0.2);
+}
+
+.button{
+background:#2b7cff;
+color:white;
+border:none;
+padding:6px 10px;
+margin:4px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.navButton{
+background:#00a65a;
+color:white;
+border:none;
+padding:6px 10px;
+margin:4px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.timetable{
+margin-top:5px;
+font-size:13px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="panel">
+観光バスナビ
+</div>
+
+<div id="map"></div>
+
+<script>
+
+//===============================
+// Supabase
+//===============================
+
+const supabaseUrl="https://zyvpzobykvuscxuhsrad.supabase.co";
+const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5dnB6b2J5a3Z1c2N4dWhzcmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3OTE0NTAsImV4cCI6MjA4NTM2NzQ1MH0.Z2cKv3VSlk3iibQl7ldwcff9WF5cBHTZkcrdvxA2Bbk";
+
+const supabaseClient=supabase.createClient(
+supabaseUrl,
+supabaseKey
+);
+
+
+//===============================
+// 地図
+//===============================
+
+const map=L.map("map").setView([34.67,131.84],15);
+
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{maxZoom:19}
+).addTo(map);
+
+
+//===============================
+// 距離計算
+//===============================
+
+function distance(lat1,lng1,lat2,lng2){
+
+const R=6371000;
+
+const dLat=(lat2-lat1)*Math.PI/180;
+const dLng=(lng2-lng1)*Math.PI/180;
+
+const a=
+Math.sin(dLat/2)**2+
+Math.cos(lat1*Math.PI/180)*
+Math.cos(lat2*Math.PI/180)*
+Math.sin(dLng/2)**2;
+
+const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+
+return R*c;
+
+}
+
+
+//===============================
+// 次のバス
+//===============================
+
+function nextBus(times){
+
+const now=new Date();
+
+let minDiff=9999;
+let next="";
+
+times.forEach(t=>{
+
+const [h,m]=t.split(":");
+
+const bus=new Date();
+
+bus.setHours(h);
+bus.setMinutes(m);
+bus.setSeconds(0);
+
+const diff=(bus-now)/60000;
+
+if(diff>0 && diff<minDiff){
+
+minDiff=diff;
+next=t;
+
+}
+
+});
+
+return {
+time:next,
+min:Math.floor(minDiff)
+};
+
+}
+
+
+//===============================
+// GPS
+//===============================
+
+navigator.geolocation.getCurrentPosition(start);
+
+
+//===============================
+// メイン処理
+//===============================
+
+async function start(pos){
+
+const myLat=pos.coords.latitude;
+const myLng=pos.coords.longitude;
+
+map.setView([myLat,myLng],16);
+
+L.marker([myLat,myLng])
+.addTo(map)
+.bindPopup("現在地");
+
+
+//===============================
+// Supabase取得
+//===============================
+
+const {data}=await supabaseClient
+.from("bus_stops")
+.select("*");
+
+
+//===============================
+// 路線ライン
+//===============================
+
+const routes={};
+
+data.forEach(s=>{
+
+if(!routes[s.route_name]){
+routes[s.route_name]=[];
+}
+
+routes[s.route_name].push(s);
+
+});
+
+Object.values(routes).forEach(route=>{
+
+route.sort((a,b)=>a.order_no-b.order_no);
+
+const line=route.map(s=>[s.lat,s.lng]);
+
+L.polyline(line,{
+color:"blue",
+weight:4
+}).addTo(map);
+
+});
+
+
+//===============================
+// 路線ごと最寄り
+//===============================
+
+const nearest={};
+
+data.forEach(stop=>{
+
+const d=distance(myLat,myLng,stop.lat,stop.lng);
+
+if(d>500)return;
+
+if(!nearest[stop.route_name] || d<nearest[stop.route_name].d){
+
+nearest[stop.route_name]={
+stop:stop,
+d:d
+};
+
+}
+
+});
+
+
+//===============================
+// バス停表示
+//===============================
+
+Object.values(nearest).forEach(n=>{
+
+const s=n.stop;
+
+const next=nextBus(s.timetable);
+
+const navURL=
+`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+
+const marker=L.marker([s.lat,s.lng]).addTo(map);
+
+marker.bindPopup(
+
+`
+<b>${s.stop_name}</b><br>
+
+路線 ${s.route_name}<br>
+
+次のバス ${next.time}<br>
+あと ${next.min} 分<br><br>
+
+<button class="button"
+onclick="showStops('${s.route_name}','上り')">
+上り
+</button>
+
+<button class="button"
+onclick="showStops('${s.route_name}','下り')">
+下り
+</button>
+
+<br>
+
+<button class="navButton"
+onclick="startNavigation(${s.lat},${s.lng})">
+ナビ開始
+</button>
+
+`
+
+);
+
+});
+
+
+//===============================
+// ナビ
+//===============================
+
+window.startNavigation=function(lat,lng){
+
+const url=
+`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+window.open(url,"_blank");
+
+};
+
+
+//===============================
+// 上り下り表示
+//===============================
+
+window.showStops=function(route,dir){
+
+data
+.filter(x=>x.route_name==route && x.direction==dir)
+.forEach(s=>{
+
+const next=nextBus(s.timetable);
+
+L.marker([s.lat,s.lng])
+.addTo(map)
+.bindPopup(
+
+`
+<b>${s.stop_name}</b><br>
+
+次 ${next.time}<br>
+あと ${next.min} 分
+
+<div class="timetable">
+
+${s.timetable.join("<br>")}
+
+</div>
+
+<button class="navButton"
+onclick="startNavigation(${s.lat},${s.lng})">
+ナビ
+</button>
+
+`
+
+);
+
+});
+
+};
+
+}
+
+</script>
+
+</body>
+</html>
