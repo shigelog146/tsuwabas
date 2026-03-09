@@ -182,10 +182,90 @@ const myLng=pos.coords.longitude;
 
 map.setView([myLat,myLng],16);
 
-L.marker([myLat,myLng])
-.addTo(map)
-.bindPopup("現在地");
+    const myIcon = L.icon({
+      iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+      shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
 
+    const myMarker = L.marker([myLat,myLng], {
+      icon: myIcon,
+      draggable: true
+    })
+    .addTo(map)
+    .bindPopup("現在地");
+
+    let busData;
+    const stopMarkers = [];
+
+    function clearStopMarkers(){
+      stopMarkers.forEach(m=>map.removeLayer(m));
+      stopMarkers.length = 0;
+    }
+
+    function updateStops(centerLat, centerLng){
+      if(!busData) return;
+
+      clearStopMarkers();
+
+      const bounds = L.latLngBounds();
+      let hasStop = false;
+
+      busData.forEach(s=>{
+        const d = distance(centerLat, centerLng, s.lat, s.lng);
+        if(d > 50000) return;
+
+        hasStop = true;
+        bounds.extend([s.lat,s.lng]);
+
+        const next = nextBus(s.timetable);
+
+        const marker = L.marker([s.lat,s.lng]).addTo(map);
+        stopMarkers.push(marker);
+
+        marker.bindPopup(
+          `
+<b>${s.stop_name}</b><br>
+
+路線 ${s.route_name}<br>
+
+次のバス ${next.time}<br>
+あと ${next.min} 分<br><br>
+
+<button class="button"
+onclick="showStops('${s.route_name}','上り')">
+上り
+</button>
+
+<button class="button"
+onclick="showStops('${s.route_name}','下り')">
+下り
+</button>
+
+<br>
+
+<button class="navButton"
+onclick="startNavigation(${s.lat},${s.lng})">
+ナビ開始
+</button>
+
+`
+        );
+      });
+
+      if(hasStop){
+        map.fitBounds(bounds,{padding:[50,50]});
+      }
+    }
+
+    myMarker.on("dragend", () => {
+      const p = myMarker.getLatLng();
+      map.setView(p);
+      updateStops(p.lat, p.lng);
+    });
 
 //===============================
 // Supabase取得
@@ -194,6 +274,8 @@ L.marker([myLat,myLng])
 const {data}=await supabaseClient
 .from("bus_stops")
 .select("*");
+
+busData = data;
 
 
 //===============================
