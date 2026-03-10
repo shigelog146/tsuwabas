@@ -221,7 +221,11 @@ map.setView([myLat,myLng],16);
         hasStop = true;
         bounds.extend([s.lat,s.lng]);
 
-        const next = nextBus(s.timetable);
+        const times = Array.isArray(s.timetable)
+          ? s.timetable
+          : s.timetable.split(",");
+
+        const next = nextBus(times);
 
         const marker = L.marker([s.lat,s.lng]).addTo(map);
         stopMarkers.push(marker);
@@ -344,7 +348,11 @@ const s=n.stop;
 
 bounds.extend([s.lat,s.lng]);
 
-const next=nextBus(s.timetable);
+const times = Array.isArray(s.timetable)
+  ? s.timetable
+  : s.timetable.split(",");
+
+const next = nextBus(times);
 
 const navURL=
 `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
@@ -411,7 +419,11 @@ data
 .filter(x=>x.route_name==route && x.direction==dir)
 .forEach(s=>{
 
-const next=nextBus(s.timetable);
+const times = Array.isArray(s.timetable)
+  ? s.timetable
+  : s.timetable.split(",");
+
+const next = nextBus(times);
 
 L.marker([s.lat,s.lng])
 .addTo(map)
