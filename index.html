@@ -97,7 +97,19 @@ const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 
 const supabaseClient=supabase.createClient(
 supabaseUrl,
-supabaseKey
+supabaseKey,
+ {
+    auth: {
+      // Android ChromeのTracking Prevention対策
+      // localStorageを使わずメモリセッションにする
+      persistSession: false,
+
+      // URLセッション検出を無効
+      detectSessionInUrl: false
+    }
+  }
+
+
 );
 
 
