@@ -117,7 +117,7 @@ supabaseKey,
 // 地図
 //=====================
 
-const map=L.map("map").setView([34.67,131.84],14);
+const map=L.map("map").setView([34.4521,131.7640],14);
 
 L.tileLayer(
 "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -224,8 +224,8 @@ alert("GPS取得失敗");
 
 start({
 coords:{
-latitude:34.67,
-longitude:131.84
+latitude:34.4521,
+longitude:131.7640
 }
 });
 
@@ -358,7 +358,7 @@ stopsMap.forEach(stop=>{
 
 const d=distance(myLat,myLng,stop.lat,stop.lng);
 
-//if(d>50000) return;
+if(d>50000) return;
 
 const details=stop.routes.map(r=>{
   const next=nextBus(r.timetable);
