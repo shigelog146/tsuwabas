@@ -341,7 +341,7 @@ stopsMap.forEach(stop=>{
 
 const d=distance(myLat,myLng,stop.lat,stop.lng);
 
-if(d>50000) return;
+//if(d>50000) return;
 
 const details=stop.routes.map(r=>{
   const next=nextBus(r.timetable);
