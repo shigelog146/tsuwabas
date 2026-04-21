@@ -1,429 +1,509 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
 
-<meta charset="UTF-8">
-<title>観光バスナビ</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>観光バスナビ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7"></script>
 
-<style>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Yu Gothic";
+    }
 
-body{
-margin:0;
-font-family:"Yu Gothic";
-}
+    #map {
+      height: 100vh;
+    }
 
-#map{
-height:100vh;
-}
+    .panel {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
 
-.panel{
-position:absolute;
-top:10px;
-left:10px;
-background:white;
-padding:12px;
-border-radius:10px;
-z-index:1000;
-box-shadow:0 4px 12px rgba(0,0,0,0.3);
-}
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+    }
 
-.title{
-font-size:18px;
-font-weight:bold;
-}
+    .button {
+      background: #2b7cff;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      margin: 4px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
 
-.button{
-background:#2b7cff;
-color:white;
-border:none;
-padding:6px 12px;
-margin:4px;
-border-radius:6px;
-cursor:pointer;
-}
+    .navButton {
+      background: #00a65a;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin-top: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
 
-.navButton{
-background:#00a65a;
-color:white;
-border:none;
-padding:8px 12px;
-margin-top:6px;
-border-radius:6px;
-cursor:pointer;
-}
-
-.timetable{
-font-size:12px;
-margin-top:6px;
-}
-
-</style>
+    .timetable {
+      font-size: 12px;
+      margin-top: 6px;
+    }
+  </style>
 
 </head>
 
 <body>
 
-<div class="panel">
-<div class="title">観光バスナビ</div>
-</div>
+  <div class="panel">
+    <div class="title">観光バスナビ</div>
+  </div>
 
-<div id="map"></div>
+  <div id="map"></div>
 
-<script>
+  <script>
 
-//=====================
-// JSエラー検出
-//=====================
+    //=====================
+    // JSエラー検出
+    //=====================
 
-window.onerror=function(msg,url,line){
-console.log("JS ERROR",msg,line);
-alert("JSエラー:"+msg);
-};
+    window.onerror = function (msg, url, line) {
+      console.log("JS ERROR", msg, line);
+      alert("JSエラー:" + msg);
+    };
 
 
-//=====================
-// Supabase設定
-//=====================
+    //=====================
+    // Supabase設定
+    //=====================
 
-const supabaseUrl="https://zyvpzobykvuscxuhsrad.supabase.co";
-const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5dnB6b2J5a3Z1c2N4dWhzcmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3OTE0NTAsImV4cCI6MjA4NTM2NzQ1MH0.Z2cKv3VSlk3iibQl7ldwcff9WF5cBHTZkcrdvxA2Bbk";
+    const supabaseUrl = "https://zyvpzobykvuscxuhsrad.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5dnB6b2J5a3Z1c2N4dWhzcmFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3OTE0NTAsImV4cCI6MjA4NTM2NzQ1MH0.Z2cKv3VSlk3iibQl7ldwcff9WF5cBHTZkcrdvxA2Bbk";
 
-const supabaseClient=supabase.createClient(
-supabaseUrl,
-supabaseKey,
- {
-    auth: {
-      // Android ChromeのTracking Prevention対策
-      // localStorageを使わずメモリセッションにする
-      persistSession: false,
+    const supabaseClient = supabase.createClient(
+      supabaseUrl,
+      supabaseKey,
+      {
+        auth: {
+          // Android ChromeのTracking Prevention対策
+          // localStorageを使わずメモリセッションにする
+          persistSession: false,
 
-      // URLセッション検出を無効
-      detectSessionInUrl: false
+          // URLセッション検出を無効
+          detectSessionInUrl: false
+        }
+      }
+
+
+    );
+
+
+    //=====================
+    // 地図
+    //=====================
+
+    const map = L.map("map").setView([34.4521, 131.7640], 14);
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom: 19 }
+    ).addTo(map);
+
+
+    //=====================
+    // 距離計算
+    //=====================
+
+    function distance(lat1, lng1, lat2, lng2) {
+
+      const R = 6371000;
+
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+      return R * c;
+
     }
-  }
 
 
-);
+    //=====================
+    // timetable整形
+    //=====================
 
+    function normalizeTimes(times) {
 
-//=====================
-// 地図
-//=====================
+      if (!times) return [];
 
-const map=L.map("map").setView([34.4521,131.7640],14);
+      if (Array.isArray(times)) return times;
 
-L.tileLayer(
-"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-{maxZoom:19}
-).addTo(map);
+      return String(times).split(",");
 
+    }
 
-//=====================
-// 距離計算
-//=====================
 
-function distance(lat1,lng1,lat2,lng2){
+    //=====================
+    // 次のバス
+    //=====================
 
-const R=6371000;
+    function nextBus(times) {
 
-const dLat=(lat2-lat1)*Math.PI/180;
-const dLng=(lng2-lng1)*Math.PI/180;
+      try {
 
-const a=
-Math.sin(dLat/2)**2+
-Math.cos(lat1*Math.PI/180)*
-Math.cos(lat2*Math.PI/180)*
-Math.sin(dLng/2)**2;
+        // 正規化
+        times = normalizeTimes(times);
 
-const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+        const now = new Date();
 
-return R*c;
+        let min = 9999;
+        let next = "";
 
-}
+        times.forEach(t => {
 
+          // ★ここ追加：不正データ防御
+          if (!t || typeof t !== "string") return;
 
-//=====================
-// timetable整形
-//=====================
+          const parts = t.split(":");
 
-function normalizeTimes(times){
+          if (parts.length !== 2) return;
 
-if(!times) return [];
+          const hour = Number(parts[0]);
+          const minute = Number(parts[1]);
 
-if(Array.isArray(times)) return times;
+          // 数値チェック
+          if (isNaN(hour) || isNaN(minute)) return;
 
-return String(times).split(",");
+          const bus = new Date();
 
-}
+          bus.setHours(hour);
+          bus.setMinutes(minute);
+          bus.setSeconds(0);
 
+          const diff = (bus - now) / 60000;
 
-//=====================
-// 次のバス
-//=====================
+          if (diff > 0 && diff < min) {
+            min = diff;
+            next = t;
+          }
 
-function nextBus(times){
+        });
 
-times=normalizeTimes(times);
+        return {
+          time: next || "終了",
+          min: isFinite(min) ? Math.floor(min) : "--"
+        };
 
-const now=new Date();
+      } catch (e) {
 
-let min=9999;
-let next="";
+        console.log("nextBusエラー:", times, e);
 
-times.forEach(t=>{
+        return {
+          time: "--",
+          min: "--"
+        };
 
-const parts=t.split(":");
+      }
 
-if(parts.length!=2)return;
+    }
 
-const bus=new Date();
 
-bus.setHours(parts[0]);
-bus.setMinutes(parts[1]);
-bus.setSeconds(0);
+    //=====================
+    // GPS
+    //=====================
 
-const diff=(bus-now)/60000;
+    navigator.geolocation.getCurrentPosition(
 
-if(diff>0 && diff<min){
+      start,
 
-min=diff;
-next=t;
+      function () {
 
-}
+        alert("GPS取得失敗");
 
-});
+        start({
+          coords: {
+            latitude: 34.4521,
+            longitude: 131.7640
+          }
+        });
 
-return{
+      },
 
-time:next||"終了",
-min:Math.floor(min)
+      {
+        enableHighAccuracy: true,
+        timeout: 10000
+      }
 
-};
+    );
 
-}
 
+    //=====================
+    // マーカー管理
+    //=====================
 
-//=====================
-// GPS
-//=====================
+    let stopMarkers = [];
+    let routeLines = [];
 
-navigator.geolocation.getCurrentPosition(
+    function clearMarkers() {
 
-start,
+      stopMarkers.forEach(m => map.removeLayer(m));
+      stopMarkers = [];
 
-function(){
+      routeLines.forEach(l => map.removeLayer(l));
+      routeLines = [];
 
-alert("GPS取得失敗");
+    }
 
-start({
-coords:{
-latitude:34.4521,
-longitude:131.7640
-}
-});
 
-},
+    //=====================
+    // メイン
+    //=====================
 
-{
-enableHighAccuracy:true,
-timeout:10000
-}
+    async function start(pos) {
 
-);
+      const myLat = pos.coords.latitude;
+      const myLng = pos.coords.longitude;
 
+      map.setView([myLat, myLng], 16);
 
-//=====================
-// マーカー管理
-//=====================
 
-let stopMarkers=[];
-let routeLines=[];
+      //現在地
 
-function clearMarkers(){
+      L.marker([myLat, myLng], {
+        icon: L.icon({
+          iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+          shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+          iconSize: [25, 41],
+          iconAnchor: [12, 41]
+        })
+      }).addTo(map).bindPopup("現在地");
 
-stopMarkers.forEach(m=>map.removeLayer(m));
-stopMarkers=[];
 
-routeLines.forEach(l=>map.removeLayer(l));
-routeLines=[];
+      //=====================
+      // Supabase
+      //=====================
 
-}
+      const { data, error } = await supabaseClient
+        .from("bus_stops")
+        .select("*");
 
+      //alert("error:" + JSON.stringify(error));
+      //alert("data length:" + (data ? data.length : "null"));
 
-//=====================
-// メイン
-//=====================
+      //console.log(data);
 
-async function start(pos){
+      if (error) {
 
-const myLat=pos.coords.latitude;
-const myLng=pos.coords.longitude;
+        console.log(error);
+        alert("データ取得失敗");
 
-map.setView([myLat,myLng],16);
+        return;
 
+      }
 
-//現在地
+      console.log("busData", data);
 
-L.marker([myLat,myLng],{
-icon:L.icon({
-iconUrl:"https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-shadowUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-iconSize:[25,41],
-iconAnchor:[12,41]
-})
-}).addTo(map).bindPopup("現在地");
 
+      //=====================
+      // バス停描画
+      //=====================
 
-//=====================
-// Supabase
-//=====================
+      clearMarkers();
 
-const {data,error}=await supabaseClient
-.from("bus_stops")
-.select("*");
+      const bounds = L.latLngBounds();
 
-//alert("error:" + JSON.stringify(error));
-//alert("data length:" + (data ? data.length : "null"));
+      const stopsMap = new Map();
 
-//console.log(data);
+      // =====================
+      // ★追加：便管理
+      // =====================
+      const tripMap = new Map();
 
-if(error){
+      data.forEach(s => {
 
-console.log(error);
-alert("データ取得失敗");
+        // ① 座標を最初に取得
+        const lat = Number(s.lat);
+        const lng = Number(s.lng);
 
-return;
+        if (isNaN(lat) || isNaN(lng)) return;
 
-}
+        // =====================
+        // ★便を時刻ベースで再構築（全時刻対応）
+        // =====================
 
-console.log("busData",data);
+        const times = normalizeTimes(s.timetable);
+        if (times.length === 0) return;
 
+        // ★ここが重要：全時刻ループ
+        times.forEach(time => {
 
-//=====================
-// バス停描画
-//=====================
+          if (!time) return;
 
-clearMarkers();
+          const parts = time.split(":");
+          if (parts.length !== 2) return;
 
-const bounds=L.latLngBounds();
+          const hour = Number(parts[0]);
+          const minute = Number(parts[1]);
 
-const stopsMap=new Map();
-const routeStops=new Map();
+          if (isNaN(hour) || isNaN(minute)) return;
 
-data.forEach(s=>{
+          // 5分単位でまとめる
+          const groupMinute = Math.floor(minute / 5) * 5;
 
-if(!s.lat || !s.lng) return;
+          const tripKey = `${s.route_name}|${s.direction}|${hour}:${groupMinute}`;
 
-const stopKey=`${s.stop_name}|${s.lat}|${s.lng}`;
+          if (!tripMap.has(tripKey)) {
+            tripMap.set(tripKey, []);
+          }
 
-if(!stopsMap.has(stopKey)){
-  stopsMap.set(stopKey,{stop_name:s.stop_name,lat:s.lat,lng:s.lng,routes:[]});
-}
+          tripMap.get(tripKey).push({
+            lat: lat,
+            lng: lng,
+            order: Number(s.order_no) || 0
+          });
 
-stopsMap.get(stopKey).routes.push({
-  route:s.route_name,
-  direction:s.direction,
-  timetable:s.timetable
-});
+        });
 
-const routeKey=`${s.route_name}|${s.direction}`;
-if(!routeStops.has(routeKey)){
-  routeStops.set(routeKey,[]);
-}
-routeStops.get(routeKey).push({
-  lat: Number(s.lat),
-  lng: Number(s.lng),
-  order: Number(s.order_no) || 0
-});
+        // ③ stopsMap（マーカー用）
+        const stopKey = `${s.stop_name}|${lat}|${lng}`;
 
-});
+        if (!stopsMap.has(stopKey)) {
+          stopsMap.set(stopKey, {
+            stop_name: s.stop_name,
+            lat: lat,
+            lng: lng,
+            routes: []
+          });
+        }
 
-// ルートごとに細い線を引く
-routeStops.forEach((points,key)=>{
-  points.sort((a,b)=>a.order-b.order);
-  const latlngs=points.map(p=>[p.lat,p.lng]);
-  const [route,direction]=key.split("|");
-  const poly=L.polyline(latlngs,{color:"#0077cc",weight:2,opacity:0.7}).addTo(map);
-  routeLines.push(poly);
-});
+        stopsMap.get(stopKey).routes.push({
+          route: s.route_name,
+          direction: s.direction,
+          timetable: s.timetable
+        });
 
-stopsMap.forEach(stop=>{
+      });
 
-const d=distance(myLat,myLng,stop.lat,stop.lng);
+      // =====================
+      // ★ここに移動（forEachの外）
+      // =====================
+      const routeColors = {};
+      const colorList = ["#0077cc", "#ff5500", "#00aa55", "#aa00ff", "#ffaa00", "#00aaff"];
 
-if(d>50000) return;
+      tripMap.forEach((points, key) => {
 
-const details=stop.routes.map(r=>{
-  const next=nextBus(r.timetable);
-  const times=normalizeTimes(r.timetable);
-  return{
-    direction:r.direction,
-    route:r.route,
-    next,
-    times
-  };
-});
+        if (points.length < 2) return;
 
-let popup=`<b>${stop.stop_name}</b><br>`;
+        points.sort((a, b) => a.order - b.order);
 
-details.forEach(d=>{
-  popup+=`路線 ${d.route} (${d.direction})<br>`;
-  popup+=`次のバス ${d.next.time}<br>あと ${d.next.min} 分<br>`;
-});
+        const latlngs = points.map(p => [p.lat, p.lng]);
 
-popup+=`<div class="timetable">`;
+        const [route] = key.split("|");
 
-details.forEach(d=>{
-  popup+=`<b>${d.direction}</b><br>${d.times.join("<br>")}<br>`;
-});
+        if (!routeColors[route]) {
+          routeColors[route] = colorList[Object.keys(routeColors).length % colorList.length];
+        }
 
-popup+=`</div><button class="navButton" onclick="startNavigation(${stop.lat},${stop.lng})">ナビ開始</button>`;
+        const poly = L.polyline(latlngs, {
+          color: routeColors[route],
+          weight: 4,
+          opacity: 0.7
+        }).addTo(map);
 
-const marker=L.marker([stop.lat,stop.lng]).addTo(map);
+        routeLines.push(poly);
 
-stopMarkers.push(marker);
+      });
 
-marker.bindPopup(popup);
+      stopsMap.forEach(stop => {
 
-bounds.extend([stop.lat,stop.lng]);
+        const d = distance(myLat, myLng, stop.lat, stop.lng);
 
-});
+        if (d > 50000) return;
 
+        const details = stop.routes.map(r => {
+          const next = nextBus(r.timetable);
+          const times = normalizeTimes(r.timetable);
+          return {
+            direction: r.direction,
+            route: r.route,
+            next,
+            times
+          };
+        });
 
-//=====================
-// 地図範囲
-//=====================
+        let popup = `<b>${stop.stop_name}</b><br>`;
 
-if(bounds.isValid()){
+        details.forEach(d => {
+          popup += `路線 ${d.route} (${d.direction})<br>`;
+          popup += `次のバス ${d.next.time}<br>あと ${d.next.min} 分<br>`;
+        });
 
-map.fitBounds(bounds,{padding:[50,50]});
+        popup += `<div class="timetable">`;
 
-}
+        details.forEach(d => {
+          popup += `<b>${d.direction}</b><br>${d.times.join("<br>")}<br>`;
+        });
 
-}
+        popup += `</div><button class="navButton" onclick="startNavigation(${stop.lat},${stop.lng})">ナビ開始</button>`;
 
+        const marker = L.marker([stop.lat, stop.lng]).addTo(map);
 
-//=====================
-// ナビ
-//=====================
+        stopMarkers.push(marker);
 
-window.startNavigation=function(lat,lng){
+        marker.bindPopup(popup);
 
-const url=
-`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        bounds.extend([stop.lat, stop.lng]);
 
-window.open(url,"_blank");
+      });
 
-};
 
-</script>
+      //=====================
+      // 地図範囲
+      //=====================
+
+      if (bounds.isValid()) {
+
+        map.fitBounds(bounds, { padding: [50, 50] });
+
+      }
+
+    }
+
+
+    //=====================
+    // ナビ
+    //=====================
+
+    window.startNavigation = function (lat, lng) {
+
+      const url =
+        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+      window.open(url, "_blank");
+
+    };
+
+  </script>
 
 </body>
+
 </html>
