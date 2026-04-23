@@ -70,6 +70,7 @@
 
   <div class="panel">
     <div class="title">観光バスナビ</div>
+    <div id="routeButtons"></div>
   </div>
 
   <div id="map"></div>
@@ -262,6 +263,7 @@
 
     let stopMarkers = [];
     let routeLines = [];
+    let activeRoutes = new Set();
 
     function clearMarkers() {
 
@@ -322,7 +324,59 @@
 
       console.log("busData", data);
 
+      // =====================
+      // ★追加：路線一覧作成
+      // =====================
 
+      const routeSet = new Set();
+
+      data.forEach(s => {
+        if (s.route_name) routeSet.add(s.route_name);
+      });
+
+      // ★修正：初回だけ初期化
+      if (activeRoutes.size === 0) {
+        activeRoutes = new Set(routeSet);
+      }
+
+      // ボタン生成
+      const btnArea = document.getElementById("routeButtons");
+      // ★修正：初回だけ生成
+      if (btnArea.innerHTML === "") {
+        btnArea.innerHTML = "";
+
+        routeSet.forEach(route => {
+
+          const btn = document.createElement("button");
+
+          btn.innerText = route;
+          btn.className = "button";
+
+          if (!activeRoutes.has(route)) {
+            btn.style.opacity = 0.4;
+          }
+
+          btn.onclick = () => {
+
+            if (activeRoutes.has(route) && activeRoutes.size === 1) {
+              return;
+            }
+
+            if (activeRoutes.has(route)) {
+              activeRoutes.delete(route);
+              btn.style.opacity = 0.4;
+            } else {
+              activeRoutes.add(route);
+              btn.style.opacity = 1;
+            }
+
+            start(pos);
+          };
+
+          btnArea.appendChild(btn);
+
+        });
+      }
       //=====================
       // バス停描画
       //=====================
@@ -418,6 +472,7 @@
         const latlngs = points.map(p => [p.lat, p.lng]);
 
         const [route] = key.split("|");
+        if (!activeRoutes.has(route)) return;
 
         if (!routeColors[route]) {
           routeColors[route] = colorList[Object.keys(routeColors).length % colorList.length];
@@ -439,7 +494,11 @@
 
         if (d > 50000) return;
 
-        const details = stop.routes.map(r => {
+        const filteredRoutes = stop.routes.filter(r => activeRoutes.has(r.route));
+
+        if (filteredRoutes.length === 0) return;
+
+        const details = filteredRoutes.map(r => {
           const next = nextBus(r.timetable);
           const times = normalizeTimes(r.timetable);
           return {
