@@ -393,28 +393,18 @@
           if (isNaN(lat) || isNaN(lng)) return;
 
           // =====================
-          // ★便を時刻ベースで再構築（全時刻対応）
+          // ★便を index ベースで再構築
           // =====================
 
           const times = normalizeTimes(s.timetable);
+
           if (times.length === 0) return;
 
-          // ★ここが重要：全時刻ループ
-          times.forEach((time) => {
+          // ★配列番号で便を識別
+          times.forEach((time, index) => {
             if (!time) return;
 
-            const parts = time.split(":");
-            if (parts.length !== 2) return;
-
-            const hour = Number(parts[0]);
-            const minute = Number(parts[1]);
-
-            if (isNaN(hour) || isNaN(minute)) return;
-
-            // 5分単位でまとめる
-            const groupMinute = Math.floor(minute / 5) * 5;
-
-            const tripKey = `${s.route_name}|${s.direction}|${hour}:${groupMinute}`;
+            const tripKey = `${s.route_name}|${s.direction}|trip_${index}`;
 
             if (!tripMap.has(tripKey)) {
               tripMap.set(tripKey, []);
@@ -424,6 +414,7 @@
               lat: lat,
               lng: lng,
               order: Number(s.order_no) || 0,
+              time: time,
             });
           });
 
