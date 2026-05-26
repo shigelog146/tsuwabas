@@ -402,8 +402,6 @@
 
           // ★配列番号で便を識別
           times.forEach((time, index) => {
-            if (!time) return;
-
             const tripKey = `${s.route_name}|${s.direction}|trip_${index}`;
 
             if (!tripMap.has(tripKey)) {
@@ -415,6 +413,7 @@
               lng: lng,
               order: Number(s.order_no) || 0,
               time: time,
+              active: !!time, // ★追加
             });
           });
 
@@ -451,10 +450,15 @@
         ];
 
         tripMap.forEach((points, key) => {
-          if (points.length < 2) return;
+          // 実際に停車する地点
+          const activePoints = points.filter((p) => p.active);
 
+          if (activePoints.length < 2) return;
+
+          // ルート順で並べる
           points.sort((a, b) => a.order - b.order);
 
+          // ★null停留所も含めて線を描く
           const latlngs = points.map((p) => [p.lat, p.lng]);
 
           const [route] = key.split("|");
