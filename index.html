@@ -414,11 +414,6 @@
               order: Number(s.order_no) || 0,
               time: time,
               active: !!time,
-
-              // ★追加
-              minutes: time
-                ? Number(time.split(":")[0]) * 60 + Number(time.split(":")[1])
-                : null,
             });
           });
 
@@ -460,16 +455,7 @@
 
           if (activePoints.length < 2) return;
 
-          // ルート順で並べる
-          points.sort((a, b) => {
-            // 時刻がある場合は時刻優先
-            if (a.minutes != null && b.minutes != null) {
-              return a.minutes - b.minutes;
-            }
-
-            // fallback
-            return a.order - b.order;
-          });
+          points.sort((a, b) => a.order - b.order);
 
           // ★null停留所も含めて線を描く
           const latlngs = [];
