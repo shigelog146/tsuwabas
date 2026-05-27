@@ -311,6 +311,8 @@
     // ★検索地点マーカー
     let searchMarker = null;
 
+    // ★現在地マーカー
+    let currentMarker = null;
     function clearMarkers() {
       stopMarkers.forEach((m) => map.removeLayer(m));
       stopMarkers = [];
@@ -327,11 +329,16 @@
       const myLat = pos.coords.latitude;
       const myLng = pos.coords.longitude;
 
-      map.setView([myLat, myLng], 16);
+      map.setView([myLat, myLng], 11);
 
       //現在地
 
-      L.marker([myLat, myLng], {
+      // 古い現在地削除
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+      }
+
+      currentMarker = L.marker([myLat, myLng], {
         icon: L.icon({
           iconUrl:
             "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
@@ -570,7 +577,7 @@
       stopsMap.forEach((stop) => {
         const d = distance(myLat, myLng, stop.lat, stop.lng);
 
-        if (d > 300) return;
+        if (d > 50000) return;
 
         const filteredRoutes = stop.routes.filter((r) =>
           activeDirections.has(`${r.route}|${r.direction}`),
@@ -614,7 +621,6 @@
 
   </div>
 `;
-          popup += `次のバス ${d.next.time}<br>あと ${d.next.min} 分<br>`;
         });
 
         popup += `<div class="timetable">`;
