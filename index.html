@@ -599,34 +599,86 @@
         let popup = `<b>${stop.stop_name}</b><br>`;
 
         details.forEach((d) => {
+
           popup += `
   <div style="
-    margin-bottom:8px;
-    padding:6px;
-    border-bottom:1px solid #ddd;
+    margin-bottom:10px;
+    padding:10px;
+    border-radius:10px;
+    background:#f7f9fc;
+    border:1px solid #dbe4f0;
   ">
 
-  <b style="font-size:16px;color:#0077cc;">
-    ${d.direction}
-  </b><br>
+    <div style="
+      font-size:18px;
+      font-weight:bold;
+      color:#0077cc;
+      margin-bottom:6px;
+    ">
+      ${d.direction}
+    </div>
 
-  路線：${d.route}<br>
+    <div style="
+      font-size:14px;
+      margin-bottom:4px;
+    ">
+      路線：${d.route}
+    </div>
 
-  次のバス：
-  <span style="color:red;font-weight:bold;">
-    ${d.next.time}
-  </span><br>
+    <div style="
+      font-size:15px;
+      margin-bottom:4px;
+    ">
+      次のバス：
+      <span style="
+        color:red;
+        font-weight:bold;
+        font-size:20px;
+      ">
+        ${d.next.time}
+      </span>
+    </div>
 
-  あと ${d.next.min} 分
+    <div style="
+      color:#444;
+      font-size:14px;
+    ">
+      あと ${d.next.min} 分
+    </div>
 
   </div>
-`;
+  `;
         });
 
         popup += `<div class="timetable">`;
 
         details.forEach((d) => {
-          popup += `<b>${d.direction}</b><br>${d.times.join("<br>")}<br>`;
+          popup += `
+<div style="
+  margin-top:6px;
+  padding:6px;
+  background:#fff;
+  border-radius:6px;
+  border:1px solid #eee;
+">
+
+  <div style="
+    font-weight:bold;
+    margin-bottom:4px;
+    color:#444;
+  ">
+    ${d.direction} 時刻表
+  </div>
+
+  <div style="
+    line-height:1.8;
+    font-size:13px;
+  ">
+    ${d.times.join(" ・ ")}
+  </div>
+
+</div>
+`;
         });
 
         popup += `</div><button class="navButton" onclick="startNavigation(${stop.lat},${stop.lng})">ナビ開始</button>`;
