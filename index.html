@@ -227,8 +227,9 @@
 
         let min = 9999;
         let next = "";
+        let nextIndex = -1;
 
-        times.forEach((t) => {
+        times.forEach((t, index) => {
           // ★ここ追加：不正データ防御
           if (!t || typeof t !== "string") return;
 
@@ -253,12 +254,14 @@
           if (diff > 0 && diff < min) {
             min = diff;
             next = t;
+            nextIndex = index;
           }
         });
 
         return {
           time: next || "終了",
           min: isFinite(min) ? Math.floor(min) : "--",
+          index: nextIndex,
         };
       } catch (e) {
         console.log("nextBusエラー:", times, e);
@@ -387,7 +390,7 @@
         btnArea.innerHTML = "";
 
         directionSet.forEach((key) => {
-          const [route, direction] = key.split("|");
+          const [route, direction, tripId] = key.split("|");
 
           const btn = document.createElement("button");
 
@@ -463,7 +466,10 @@
           tripMap.get(tripKey).push({
             lat: lat,
             lng: lng,
+            stop_name: s.stop_name,
+
             order: Number(s.order_no) || 0,
+
             time: time,
 
             active:
@@ -507,31 +513,38 @@
       ];
 
       tripMap.forEach((points, key) => {
+        points.sort((a, b) => a.order - b.order);
+
         // 実際に停車する地点
         const activePoints = points.filter((p) => p.active);
 
         if (activePoints.length < 2) return;
 
-        points.sort((a, b) => a.order - b.order);
+        // =====================
+        // ★便の終点自動取得
+        // =====================
+
+        const lastStop =
+          activePoints[activePoints.length - 1];
+
+        const actualDestination = lastStop.stop_name;
 
         // ★実際に停車する地点だけ線を描く
         const latlngs = [];
 
-        points
-          .filter((p) => p.active)
-          .forEach((p) => {
-            const last = latlngs[latlngs.length - 1];
+        activePoints.forEach((p) => {
+          const last = latlngs[latlngs.length - 1];
 
-            // 同じ座標は除外
-            if (!last || last[0] !== p.lat || last[1] !== p.lng) {
-              latlngs.push([p.lat, p.lng]);
-            }
-          });
+          // 同じ座標は除外
+          if (!last || last[0] !== p.lat || last[1] !== p.lng) {
+            latlngs.push([p.lat, p.lng]);
+          }
+        });
 
         // ★追加
         if (latlngs.length < 2) return;
 
-        const [route, direction] = key.split("|");
+        const [route, direction, tripId] = key.split("|");
 
         const directionKey = `${route}|${direction}`;
 
