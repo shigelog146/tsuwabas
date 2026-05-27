@@ -413,7 +413,12 @@
               lng: lng,
               order: Number(s.order_no) || 0,
               time: time,
-              active: !!time,
+
+              active:
+                time !== null &&
+                time !== undefined &&
+                time !== "" &&
+                time !== "null",
             });
           });
 
@@ -457,17 +462,22 @@
 
           points.sort((a, b) => a.order - b.order);
 
-          // ★null停留所も含めて線を描く
+          // ★実際に停車する地点だけ線を描く
           const latlngs = [];
 
-          points.forEach((p) => {
-            const last = latlngs[latlngs.length - 1];
+          points
+            .filter((p) => p.active)
+            .forEach((p) => {
+              const last = latlngs[latlngs.length - 1];
 
-            // 同じ座標は除外
-            if (!last || last[0] !== p.lat || last[1] !== p.lng) {
-              latlngs.push([p.lat, p.lng]);
-            }
-          });
+              // 同じ座標は除外
+              if (!last || last[0] !== p.lat || last[1] !== p.lng) {
+                latlngs.push([p.lat, p.lng]);
+              }
+            });
+
+          // ★追加
+          if (latlngs.length < 2) return;
 
           const [route] = key.split("|");
           if (!activeRoutes.has(route)) return;
