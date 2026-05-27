@@ -447,6 +447,9 @@
       // =====================
       const tripMap = new Map();
 
+      // ★便ごとの終点保存
+      const tripDestinationMap = new Map();
+
       data.forEach((s) => {
         // ① 座標を最初に取得
         const lat = Number(s.lat);
@@ -536,6 +539,9 @@
 
         const actualDestination = lastStop.stop_name;
 
+        // ★便の終点保存
+        tripDestinationMap.set(key, actualDestination);
+
         // ★実際に停車する地点だけ線を描く
         const latlngs = [];
 
@@ -586,13 +592,25 @@
         if (filteredRoutes.length === 0) return;
 
         const details = filteredRoutes.map((r) => {
+
           const next = nextBus(r.timetable);
+
           const times = normalizeTimes(r.timetable);
+
+          // ★次便index
+          const tripKey =
+            `${r.route}|${r.direction}|trip_${next.index}`;
+
+          // ★終点取得
+          const destination =
+            tripDestinationMap.get(tripKey) || "不明";
+
           return {
             direction: r.direction,
             route: r.route,
             next,
             times,
+            destination,
           };
         });
 
@@ -622,7 +640,15 @@
       font-size:14px;
       margin-bottom:4px;
     ">
-      路線：${d.route}
+      路線：${d.route}<br>
+
+行先：
+<span style="
+  color:#ff5500;
+  font-weight:bold;
+">
+  ${d.destination}
+</span><br>
     </div>
 
     <div style="
