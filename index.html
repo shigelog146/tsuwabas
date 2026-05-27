@@ -256,7 +256,7 @@
 
       let stopMarkers = [];
       let routeLines = [];
-      let activeRoutes = new Set();
+      let activeDirections = new Set();
 
       // ★追加
       let stopsMap = new Map();
@@ -320,46 +320,54 @@
         console.log("busData", data);
 
         // =====================
-        // ★追加：路線一覧作成
+        // direction別ボタン
         // =====================
 
-        const routeSet = new Set();
+        const directionSet = new Set();
 
         data.forEach((s) => {
-          if (s.route_name) routeSet.add(s.route_name);
+          if (s.route_name && s.direction) {
+            directionSet.add(`${s.route_name}|${s.direction}`);
+          }
         });
 
-        // ★修正：初回だけ初期化
-        if (activeRoutes.size === 0) {
-          activeRoutes = new Set(routeSet);
+        // 初回のみ全ON
+        if (activeDirections.size === 0) {
+          activeDirections = new Set(directionSet);
         }
 
         // ボタン生成
         const btnArea = document.getElementById("routeButtons");
-        // ★修正：初回だけ生成
+
         if (btnArea.innerHTML === "") {
           btnArea.innerHTML = "";
 
-          routeSet.forEach((route) => {
+          directionSet.forEach((key) => {
+            const [route, direction] = key.split("|");
+
             const btn = document.createElement("button");
 
-            btn.innerText = route;
+            btn.innerText = `${route}\n${direction}`;
+
             btn.className = "button";
 
-            if (!activeRoutes.has(route)) {
+            btn.style.whiteSpace = "pre-line";
+            btn.style.fontSize = "12px";
+
+            if (!activeDirections.has(key)) {
               btn.style.opacity = 0.4;
             }
 
             btn.onclick = () => {
-              if (activeRoutes.has(route) && activeRoutes.size === 1) {
+              if (activeDirections.has(key) && activeDirections.size === 1) {
                 return;
               }
 
-              if (activeRoutes.has(route)) {
-                activeRoutes.delete(route);
+              if (activeDirections.has(key)) {
+                activeDirections.delete(key);
                 btn.style.opacity = 0.4;
               } else {
-                activeRoutes.add(route);
+                activeDirections.add(key);
                 btn.style.opacity = 1;
               }
 
@@ -479,8 +487,11 @@
           // ★追加
           if (latlngs.length < 2) return;
 
-          const [route] = key.split("|");
-          if (!activeRoutes.has(route)) return;
+          const [route, direction] = key.split("|");
+
+          const directionKey = `${route}|${direction}`;
+
+          if (!activeDirections.has(directionKey)) return;
 
           if (!routeColors[route]) {
             routeColors[route] =
@@ -490,11 +501,10 @@
           const poly = L.polyline(latlngs, {
             color: routeColors[route],
 
-            // ★太く
-            weight: activeRoutes.size === 1 ? 8 : 5,
+            // directionが1つだけ選択時
+            weight: activeDirections.size === 1 ? 8 : 5,
 
-            // ★選択時は濃く
-            opacity: activeRoutes.size === 1 ? 1 : 0.7,
+            opacity: activeDirections.size === 1 ? 1 : 0.7,
           }).addTo(map);
 
           routeLines.push(poly);
@@ -506,7 +516,7 @@
           if (d > 50000) return;
 
           const filteredRoutes = stop.routes.filter((r) =>
-            activeRoutes.has(r.route),
+            activeDirections.has(`${r.route}|${r.direction}`),
           );
 
           if (filteredRoutes.length === 0) return;
@@ -652,7 +662,7 @@
       //=====================
 
       function findNearbyRoutes(lat, lng) {
-        const nearbyRoutes = new Set();
+        const nearbyDirections = new Set();
 
         // ★検索半径
         const SEARCH_DISTANCE = 500;
@@ -663,28 +673,30 @@
           // 500m以内
           if (d <= SEARCH_DISTANCE) {
             stop.routes.forEach((r) => {
-              nearbyRoutes.add(r.route);
+              nearbyDirections.add(`${r.route}|${r.direction}`);
             });
           }
         });
 
         // 見つからない
-        if (nearbyRoutes.size === 0) {
+        if (nearbyDirections.size === 0) {
           alert("近くにバス路線がありません");
 
           return;
         }
 
         // 路線切替
-        activeRoutes.clear();
+        activeDirections.clear();
 
-        nearbyRoutes.forEach((r) => {
-          activeRoutes.add(r);
+        nearbyDirections.forEach((r) => {
+          activeDirections.add(r);
         });
 
         // ボタン見た目更新
         document.querySelectorAll("#routeButtons button").forEach((btn) => {
-          if (activeRoutes.has(btn.innerText)) {
+          const text = btn.innerText.replace("\n", "|");
+
+          if (activeDirections.has(text)) {
             btn.style.opacity = 1;
           } else {
             btn.style.opacity = 0.3;
