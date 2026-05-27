@@ -33,7 +33,30 @@
         z-index: 1000;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
+      .routeArea {
+        margin-top: 8px;
+        max-height: 220px;
+        overflow-y: auto;
 
+        border-top: 1px solid #ddd;
+        padding-top: 6px;
+      }
+
+      .toggleButton {
+        width: 100%;
+        background: #444;
+        color: white;
+        border: none;
+        padding: 8px;
+        border-radius: 6px;
+        margin-top: 8px;
+      }
+
+      #routeButtons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
       .title {
         font-size: 18px;
         font-weight: bold;
@@ -93,7 +116,13 @@
         </button>
       </div>
 
-      <div id="routeButtons"></div>
+      <button class="toggleButton" onclick="toggleRoutes()">
+        路線を選択 ▼
+      </button>
+
+      <div id="routeArea" class="routeArea" style="display: none">
+        <div id="routeButtons"></div>
+      </div>
     </div>
 
     <div id="map"></div>
@@ -711,6 +740,16 @@
           },
         });
       }
+
+      window.toggleRoutes = function () {
+        const area = document.getElementById("routeArea");
+
+        if (area.style.display === "none") {
+          area.style.display = "block";
+        } else {
+          area.style.display = "none";
+        }
+      };
       //=====================
       // ナビ
       //=====================
