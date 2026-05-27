@@ -111,11 +111,14 @@
     <div class="title">観光バスナビ</div>
 
     <!-- 検索 -->
-    <div style="margin-top: 8px">
-      <input type="text" id="searchBox" placeholder="行きたい場所を検索" style="width: 180px; padding: 6px" />
+    <input type="text" id="searchBox" placeholder="行きたい場所を検索" style="width: 180px; padding: 6px" />
 
-      <button class="button" onclick="searchPlace()">検索</button>
-    </div>
+    <button class="button" onclick="searchPlace()">検索</button>
+
+    <!-- ★追加 -->
+    <button class="button" onclick="clearSearchMarker()">
+      検索クリア
+    </button>
 
     <!-- 観光地ショートカット -->
     <div style="margin-top: 8px">
@@ -761,6 +764,53 @@
       } else {
         area.style.display = "none";
       }
+    };
+
+    //=====================
+    // 検索ピンクリア
+    //=====================
+
+    window.clearSearchMarker = async function () {
+
+      // ピン削除
+      if (searchMarker) {
+        map.removeLayer(searchMarker);
+        searchMarker = null;
+      }
+
+      // 検索欄クリア
+      document.getElementById("searchBox").value = "";
+
+      // 全路線ON
+      activeDirections.clear();
+
+      // 再取得
+      const { data } = await supabaseClient
+        .from("bus_stops")
+        .select("route_name,direction");
+
+      const allDirections = new Set();
+
+      data.forEach((s) => {
+        if (s.route_name && s.direction) {
+          allDirections.add(`${s.route_name}|${s.direction}`);
+        }
+      });
+
+      allDirections.forEach((d) => {
+        activeDirections.add(d);
+      });
+
+      // ボタン表示更新
+      document.querySelectorAll("#routeButtons button").forEach((btn) => {
+        btn.style.opacity = 1;
+      });
+
+      // GPS位置へ戻す
+      navigator.geolocation.getCurrentPosition((pos) => {
+        start(pos);
+      });
+
     };
     //=====================
     // ナビ
