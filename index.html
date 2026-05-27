@@ -557,7 +557,7 @@
       stopsMap.forEach((stop) => {
         const d = distance(myLat, myLng, stop.lat, stop.lng);
 
-        if (d > 50000) return;
+        if (d > 300) return;
 
         const filteredRoutes = stop.routes.filter((r) =>
           activeDirections.has(`${r.route}|${r.direction}`),
