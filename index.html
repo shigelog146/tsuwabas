@@ -107,64 +107,63 @@
       }
 
       #panelToggleBtn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 2000;
-
-        background: #2b7cff;
+        width: 100%;
+        background: #444;
         color: white;
-
         border: none;
-        border-radius: 8px;
-
-        padding: 12px 14px;
-        font-size: 16px;
-      }
-
-      .panel.hidden {
-        display: none;
+        padding: 10px;
+        border-radius: 6px;
+        margin-top: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
       }
     </style>
   </head>
 
   <body>
-    <div class="panel" id="mainPanel">
+    <div class="panel">
       <div class="title">観光バスナビ</div>
-      <button id="panelToggleBtn" onclick="togglePanel()">✕ 閉じる</button>
 
-      <!-- 検索 -->
-      <input
-        type="text"
-        id="searchBox"
-        placeholder="行きたい場所を検索"
-        style="width: 180px; padding: 6px"
-      />
-
-      <button class="button" onclick="searchPlace()">検索</button>
-
-      <!-- ★追加 -->
-      <button class="button" onclick="clearSearchMarker()">検索クリア</button>
-
-      <!-- 観光地ショートカット -->
-      <div style="margin-top: 8px">
-        <button class="button" onclick="searchTour('太皷谷稲成神社')">
-          稲成神社
-        </button>
-
-        <button class="button" onclick="searchTour('津和野駅')">
-          津和野駅
-        </button>
-      </div>
-
-      <button class="toggleButton" onclick="toggleRoutes()">
-        路線を選択 ▼
+      <button id="panelToggleBtn" onclick="togglePanel()">
+        ▲ メニューを閉じる
       </button>
 
-      <div id="routeArea" class="routeArea" style="display: none">
-        <div id="routeButtons"></div>
+      <div id="panelContents">
+        <!-- 検索 -->
+        <input
+          type="text"
+          id="searchBox"
+          placeholder="行きたい場所を検索"
+          style="width: 180px; padding: 6px"
+        />
+
+        <button class="button" onclick="searchPlace()">検索</button>
+
+        <!-- ★追加 -->
+        <button class="button" onclick="clearSearchMarker()">検索クリア</button>
+
+        <!-- 観光地ショートカット -->
+        <div style="margin-top: 8px">
+          <button class="button" onclick="searchTour('太皷谷稲成神社')">
+            稲成神社
+          </button>
+
+          <button class="button" onclick="searchTour('津和野駅')">
+            津和野駅
+          </button>
+        </div>
+
+        <button class="toggleButton" onclick="toggleRoutes()">
+          路線を選択 ▼
+        </button>
+
+        <div id="routeArea" class="routeArea" style="display: none">
+          <div id="routeButtons"></div>
+        </div>
       </div>
+      <!-- panelContents -->
     </div>
+    <!-- panel -->
 
     <div id="map"></div>
 
@@ -885,18 +884,16 @@
       };
 
       window.togglePanel = function () {
-        const panel = document.getElementById("mainPanel");
+        const contents = document.getElementById("panelContents");
 
         const btn = document.getElementById("panelToggleBtn");
 
-        if (panel.classList.contains("hidden")) {
-          panel.classList.remove("hidden");
-
-          btn.innerText = "✕ 閉じる";
+        if (contents.style.display === "none") {
+          contents.style.display = "block";
+          btn.innerText = "▲ メニューを閉じる";
         } else {
-          panel.classList.add("hidden");
-
-          btn.innerText = "☰ メニュー";
+          contents.style.display = "none";
+          btn.innerText = "▼ メニューを開く";
         }
       };
 
